@@ -1,0 +1,167 @@
+---
+title: "Regression, Correlation, and PCA"
+output: html_document
+date: '2022-03-29'
+---
+In today's lab class, we are going through the application of the concepts of regression, correlation, and PCA using the data sets built-in in R.
+
+### 1) Requesting the data
+
+```{r echo = T}
+
+# Loading the example data
+
+data(iris)
+data(cars)
+data(mtcars)
+data(USJudgeRatings)
+
+```
+
+### 2) Regression
+
+```{r echo = T}
+
+speed <- cars$speed
+distance <- cars$dist
+
+model.cars <- lm(distance ~ speed)
+
+summary(model.cars)
+
+plot(x = speed,
+     y = distance,
+     xlim = c(min(speed), max(speed)),
+     ylim = c(min(distance), max(distance)),
+     pch = 19,
+     main = "Speed of cars vs. Distance taken to stop")
+
+text(x = min(speed) + sd(speed, na.rm = T)/2,
+     y = max(distance)-(max(distance)/10),
+     labels = paste0("R-squared = ", round(x = summary(model.cars)$r.squared, digits = 2)))
+
+abline(model.cars, col = "red")
+
+```
+
+### 3) Correlation
+
+```{r echo = T}
+
+# Installing and/or loading required packages
+
+if(!require(package = "corrplot", quietly = T)){
+  install.packages("corrplot")
+}
+
+# Scatterplot variable vs. variable - USJudgeRatings data
+
+pairs(USJudgeRatings)
+
+# Calculating the correlation matrix based on USJudgeRatings data
+
+cor.USJudgeRatings <- cor(x = USJudgeRatings, method = "pearson")
+
+# Plotting the matrix of correlation
+
+corrplot(corr = cor.USJudgeRatings, method = "circle")
+
+```
+
+### 4) Use the Iris dataset and perform a principal components analysis of it using the following commands:
+
+```{r echo = T}
+
+# Installing required packages
+
+if(!require(package = "ggplot2", quietly = T)){
+  install.packages("ggplot2")
+}
+
+if(!require(package = "ggfortify", quietly = T)){
+  install.packages("ggfortify")
+}
+
+# Extracting numeric matrix from iris data
+
+iris.data <- subset(x = iris, select = -Species)
+
+# Extracting vector of species from iris data
+
+iris.species <- subset(x = iris, select = Species)
+iris.species <- iris.species$Species
+
+# Computing PCA
+
+iris.pca.prcmp <- prcomp(x = iris.data)
+
+# Plotting PCA results using ggplot2
+
+autoplot(iris.pca.prcmp, data = iris, colour = 'Species',
+         loadings = TRUE, loadings.colour = 'blue',
+         loadings.label = TRUE, loadings.label.size = 3)
+```
+
+* A) Include the final plot in your answer with loading vectors
+* B) What is the most important measured parameter in differentiating the species of iris?
+* C) What is the second most important, if any?
+
+### 5) Now, perform automated classification of this dataset using the following:
+
+```{r echo = T}
+
+# Install and/or load the package e1071
+
+if(!require(package = "e1071", quietly = T)){
+  install.packages("e1071")
+}
+
+# Computing SVMs
+
+model.svm <- svm(x = iris.data, y = iris.species, type="C")
+
+# Computing and Plotting PCoA
+
+plot(cmdscale(dist(iris.data)),
+     col = as.integer(iris.species),
+     pch = c("o","+")[1:150 %in% model.svm$index + 1])
+
+```
+
+* A) You should have created a plot of the iris dataset with the classification parameters learned by the algorithm. What do the “+” characters on the plot represent?
+* B) Use the model to classify the iris data:
+
+```{r echo = T}
+
+pred <- predict(model.svm, iris.data)
+table(pred, iris.species)
+
+```
+
+Include the table in your answer.
+
+* C) What are the false positive, false negative, true positive and true negative rates for classification using this model?
+
+### 6) Now do the same types of analysis on the “mtcars” dataset (data from the Motor Trend reviews of cars in the 1974 model year, this is not the same data as previously discussed in class).
+
+* A) Perform PCA:
+
+```{r echo = T} 
+data(mtcars)
+#fix(mtcars)
+prcars<-prcomp(mtcars)
+autoplot(prcars, data=mtcars, loadings=TRUE, loadings.label=TRUE)
+```
+
+Include the plot in your answer.
+
+* B) What were the most important parameters driving the different attributes of cars in 1974? Do you think this analysis would apply today?
+* C) Can you perform classification on this dataset? If so, please include the result, If not explain why.
+
+### 7) Run the R command 
+
+```{r echo = T}
+data()
+```
+
+Choose an appropriate additional dataset. Perform PCA and / or SVM and interpret the result.

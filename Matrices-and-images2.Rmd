@@ -1,0 +1,210 @@
+---
+title: "Matrices and Images"
+author: "Matt Hudson"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# R Markdown for computer lab class 3, Data Processing and Analysis
+
+## Introduction to R Markdown and images as matrices
+(revised 8.2.2022)
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+The document  includes both content (in gray boxes) as well as the output (white boxes) of any embedded R code chunks within the document. You can also copy and paste the code from the gray boxes into your R terminal.
+
+### Revision:
+
+To create a single variable in an object:
+
+```{r eval=TRUE} 
+scalar_object<-(2+3+4) #make number by adding other numbers
+print(scalar_object) #print contents
+typeof(scalar_object) #find how the variables are stored
+```
+
+To create a vector
+```{r eval=TRUE} 
+vector_object_1<-c(2,3,4) #make vector, storing numbers separately
+print(vector_object_1) #print contents
+typeof (vector_object_1) #find how the variables are stored
+```
+
+... and a second vector
+```{r eval=TRUE} 
+vector_object_2<-c(4,6,8)
+print(vector_object_2)
+typeof (vector_object_2)
+```
+
+Plot the vectors against one another, and connect the dots:
+```{r eval=TRUE} 
+plot(vector_object_1,vector_object_2) #make scatter plot of the values in the two vectors
+lines(vector_object_1,vector_object_2) #add lines between points
+```
+
+### Today's Lesson
+
+So what about matrices? Multiple ways of creating a matrix.
+
+First let's create a third vector, just for symmetry
+```{r eval=TRUE} 
+vector_object_3<-c(1,2,3)
+print(vector_object_3)
+typeof (vector_object_3)
+```
+
+Now let's turn those vectors into a matrix:
+
+First with vectors as columns
+```{r eval=TRUE} 
+col_matrix<-cbind(vector_object_1, vector_object_2, vector_object_3) #create a matrix where the vectors are columns
+print(col_matrix)
+```
+
+and then as rows
+```{r eval=TRUE} 
+row_matrix<-rbind(vector_object_1, vector_object_2, vector_object_3) #create a matrix where the vectors are rows
+print(row_matrix)
+```
+
+Now let's say we want to plot vectors from the matrix as a scatter plot.
+We can plot the columns against one another, using square brackets to call out the vectors by the number of the columns:
+
+```{r eval=TRUE} 
+plot(col_matrix[,2], col_matrix[,3]) #by putting the name of the column in square parentheses, 
+lines(col_matrix[,2], col_matrix[,3]) #you pull it out as a vector
+```
+
+Or we can plot the ROWS using a similar process:
+```{r eval=TRUE} 
+plot(col_matrix[1,], col_matrix[3,]) #by putting the number of the row and a comma in this form [1,]
+lines(col_matrix[1,], col_matrix[3,]) #you pull out the row as a vector
+```
+
+Or, we can plot the whole matrix at once, as a heatmap
+```{r eval=TRUE} 
+library(ggfortify) #load fancy plotting package
+autoplot(col_matrix) #plot heat map of matrix. Used a lot for things like gene expression
+```
+
+###Images
+
+Now. This brings us to images, which, as we've discussed, are matrices. Imagine we wanted to make a letter out of numbers:
+```{r eval=TRUE} 
+L1<-rep(1, each=8) #make a vector with 8 1s in a row
+print (L1)
+L2<-rep(0, each=8) #make a vector with 8 0s in a row
+L2[8]=1 # turn the last 0 into a 1
+L3<-L2 #copy L2 to L3, etc.
+L4<-L2
+L5<-L2
+L_image<-cbind(L1,L2,L3,L4,L5) #convert five vectors to matrix
+print (L_image)
+autoplot(L_image) #print as heat map. Look a bit like a letter L? Note high (1) is dark, low (0) is light.
+```
+
+```{r eval=TRUE, include=FALSE}
+library("imager")
+```
+
+So, for this next bit, we're going to use a non-standard library that lets us import images into R as numeric matrices.
+If you don't have this library installed, you will need to run:
+  install.packages("imager")
+  library("imager")
+first. Also note that depending on whether you're on Windows, Linux or Mac, you may need to also install an X11 library such as XQuartz on Mac. Don't worry too much if you can't get this to work yourself but just follow along here.
+
+```{r eval=TRUE}
+lim<-as.cimg(L_image)
+plot(lim)
+```
+
+Now, you'll notice that our letter "L" is now white on black, and the image is flipped both vertically and horizontally. This is because different images represent intensities in different directions, and have different conventions about where to plot each pixel given in the matrix. This library is more representative of how most image systems work (higher numbers are usually brighter, so black=0, white=1), but it varies. Converting image formats can be a pain.
+
+Imager, like many R packages, comes with built-in example data. In this case a color image of boats. Let's plot this.
+
+```{r eval=TRUE, include=FALSE}
+library("imager")
+```
+
+```{r eval=TRUE}
+plot(boats) #plot the image matrix
+```
+
+So, it's classed as an image not a numeric data matrix right now, but it's still numbers:
+
+```{r eval=TRUE}
+typeof(boats)
+head(boats)
+mean(boats)
+```
+
+So. Now we come to another interesting problem. A color image, as we've discussed, has *three* values for each pixel. So that makes a color image a three dimensional matrix (or, if you like, three stacked matrices, one for each color channel). So if we want to convert it into a spreadsheet-type view, we use a _data frame_.
+
+```{r eval=TRUE}
+images_as_numbers<-as.data.frame(boats)
+head(images_as_numbers)
+```
+
+
+```{r eval=TRUE, include=FALSE}
+library("dplyr")
+library("ggplot2")
+```
+
+OK so this bit is a fudge, to change the names of the channels in the image file to something more identifiable (you'll need to load the dplyr library to do this), and then a fancy plot of the intensities in each channel (you'll need to install ggplot2 to do this)
+
+```{r eval=TRUE}
+images_as_numbers <- dplyr::mutate(images_as_numbers,channel=factor(cc,labels=c('R','G','B'))) #label R G B layers sequentially
+ggplot(images_as_numbers,aes(value,col=channel))+geom_histogram(bins=30)+facet_wrap(~ channel) #do fancy plot
+```
+
+Unsurprisingly, there is more blue in this picture than other colors (it's a picture of boats on an ocean, under a blue sky...)
+You might also notice that all of the values are clustered around the mean (which is about 0.6 or so). This is a bit sub-optimal... have you ever wondered how those magic buttons on some cellphones or photo editors that say "enhance" make your pictures look better? It's all done in matrix math. 
+
+Let's start with a grayscale image:
+
+```{r eval=TRUE}
+grayboats<-grayscale(boats) #collapses each RGB pixel to one 8-bit intensity value, average of R,G,B
+plot(grayboats)
+```
+
+So this has the same problem of fairly low contrast - not much pure black or white:
+
+```{r eval=TRUE}
+hist(grayboats) #show histogram of where values are in intensity range
+```
+
+So, we're going to use the ecdf function (the empirical cumulative distribution function) to equally spread out the intensities of pixels over the full range. First of all, we're going to run ecdf, which returns a file which is actually a function that contains the corrections for the values.
+
+```{r eval=TRUE}
+equalization<-ecdf(grayboats) #create rank function
+print(equalization)
+```
+
+So, let's spread the values of each pixel out by ranking their intensities, then converting the ranks to their actual values (this is called histogram equalization or sometimes normalization, there is an R command called ecdf that does this easily, we then multiply the matrix it makes by the image to enhance it, and convert back to image format)
+
+```{r eval=TRUE}
+enhanced_grayboats<-equalization(grayboats) #equalize matrix using function output by ecdf
+enhanced_grayboats<-(as.cimg(enhanced_grayboats,dim=dim(grayboats))) #convert equalized matrix back to image
+hist(enhanced_grayboats) #plot histogram of pixel intensities in new image
+plot(enhanced_grayboats) #plot image
+```
+
+Now let's apply that to the color image (some more fudging here, but you got the basic idea from the grayscale)
+
+```{r eval=TRUE}
+hist.eq <- function(im) as.cimg(ecdf(im)(im),dim=dim(im)) #define new function to make it a bit quicker
+cn <- imsplit(boats,"c") #split R, G and B channels
+cn.eq <- map_il(cn,hist.eq) #separate normalization on each channel as we did with grayscale
+enhanced_image<-imappend(cn.eq,"c") #convert back to color image
+plot(enhanced_image) #render new image
+```
+
+So you can probably tell that some of the magic you see in photo processing software these days relies on fairly simple math (though a lot of it gets more complicated than this!). But hopefully I've explained how you turn images into numbers. Maybe you can even start to think how you can turn numbers into images, as you can in drawing software or CGI for example.
+
+

@@ -1,0 +1,109 @@
+---
+title: "GWAS examples"
+output: html_document
+date: '2022-05-03'
+---
+
+## Installing and loading the packages
+
+First, let's install the packages for producing the graphs. These packages are avaliable in the CRAN repository:
+
+```{r echo = T}
+if(!require(CMplot, quietly = T)){
+  install.packages("CMplot")
+} # For the manhattan plots
+if(!require(gplots, quietly = T)){
+  install.packages("gplots")
+} # For beautiful heatmaps
+
+library(CMplot)
+library(gplots)
+
+```
+
+## Installing GAPIT functions
+
+For performing the GWAS, we will be using the package GAPIT.
+The package GAPIT is a suite of programs developed in R, and it contains several models to perform GWAS.
+Since the developers actively maintain the package. We will be installing the package directly from Dr. Zhang Lab's website:
+
+```{r echo = T}
+source("https://urldefense.com/v3/__https://zzlab.net/GAPIT/GAPIT.library.R__;!!DZ3fjg!6WdLofoS7t5xdmklXdtwOEWiSMbth9NXs-0l6vFG92_gr9gesDRICsYM22BXF8CAziHf8kCDWrT91wHxilemhUNJQUmy$ ")
+source("https://urldefense.com/v3/__https://zzlab.net/GAPIT/gapit_functions.txt__;!!DZ3fjg!6WdLofoS7t5xdmklXdtwOEWiSMbth9NXs-0l6vFG92_gr9gesDRICsYM22BXF8CAziHf8kCDWrT91wHxilemhV_4ecHP$ ")
+```
+
+## Downloading the example dataset
+
+For the Lab class today, we will be performing GWAS in a maize example dataset.
+The source of the dataset is Tassel's GitHub page:
+https://urldefense.com/v3/__https://github.com/maize-genetics/rTASSEL__;!!DZ3fjg!6WdLofoS7t5xdmklXdtwOEWiSMbth9NXs-0l6vFG92_gr9gesDRICsYM22BXF8CAziHf8kCDWrT91wHxilemhYP4hbU4$ 
+
+```{r echo = T}
+phenot <- read.table(url("https://urldefense.com/v3/__https://github.com/maize-genetics/rTASSEL/raw/622c96990a4dd4375b4311561fc4ec5a972e7511/inst/extdata/mdp_traits.txt__;!!DZ3fjg!6WdLofoS7t5xdmklXdtwOEWiSMbth9NXs-0l6vFG92_gr9gesDRICsYM22BXF8CAziHf8kCDWrT91wHxilemhS21irgu$ "), header = T)
+genot <- read.delim(url("https://urldefense.com/v3/__https://github.com/maize-genetics/rTASSEL/raw/622c96990a4dd4375b4311561fc4ec5a972e7511/inst/extdata/mdp_genotype.hmp.txt__;!!DZ3fjg!6WdLofoS7t5xdmklXdtwOEWiSMbth9NXs-0l6vFG92_gr9gesDRICsYM22BXF8CAziHf8kCDWrT91wHxilemhQpPAZRC$ "), header = F)
+```
+
+
+## Checking the data structure
+
+```{r echo = T}
+dim(phenot)
+str(phenot)
+
+dim(genot)
+print(genot[1:5,1:20])
+```
+
+## Performing the GWAS
+
+```{r echo = T}
+gapit_result <- GAPIT(Y = subset(phenot, select = c("X.Trait.", "EarHT")),
+                      G = genot,
+                      model = "MLM",
+                      PCA.total = 3)
+```
+
+## Visualising the results
+
+#### SNP Density Plot
+
+```{r echo = T}
+CMplot(Pmap = subset(x = gapit_result$GWAS, select = c("SNP", "Chromosome", "Position ", "P.value")),
+       LOG10 = T,
+       threshold = 0.01,
+       col = rainbow(n = 10), file.output = FALSE, plot.type = "d")
+```       
+
+#### Conventional rectangular manhattan plot
+
+```{r echo = T}
+CMplot(Pmap = subset(x = gapit_result$GWAS, select = c("SNP", "Chromosome", "Position ", "P.value")),
+       LOG10 = T,
+       threshold = 0.01,
+       col = rainbow(n = 10), file.output = FALSE, plot.type = "m")
+```
+
+#### Circular Manhattan Plot
+
+```{r echo = T}
+CMplot(Pmap = subset(x = gapit_result$GWAS, select = c("SNP", "Chromosome", "Position ", "P.value")),
+       LOG10 = T,
+       threshold = 0.01,
+       col = rainbow(n = 10),
+       file.output = FALSE,
+       plot.type = "c",
+       outward = F,
+       H = 5,
+       r = 10,
+       cir.band = 5,
+       amplify = F,
+       band = 1)
+```
+#### QQ Plot
+
+```{r echo = T}
+CMplot(Pmap = subset(x = gapit_result$GWAS, select = c("SNP", "Chromosome", "Position ", "P.value")),
+       LOG10 = T,
+       threshold = 0.01,
+       col = rainbow(n = 10), file.output = FALSE, plot.type = "q")
+```

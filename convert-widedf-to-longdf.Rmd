@@ -1,0 +1,235 @@
+---
+title: "Converting wide data frames in long/tall data frames"
+output: html_document
+date: March 11, 2022
+---
+
+# Some solutions for converting wide data frame in a long/tall data frame (key-value pair) using r-base only.
+
+### Loading the original data (wide format data frame)
+
+```{r echo = TRUE}
+data("WorldPhones")
+
+wide.df <- WorldPhones
+
+# The data frame below is a wide format data frame r x c, where c > r. The rows correspond to the years, and the columns correspond to the regions:
+
+print(wide.df)
+```
+
+## The first three solutions here are by Joao Viana
+# Solution 1: 
+### Converting wide format in long/tall format using nested for-loops and dimnames
+
+Initiate an empty tall.df with 3 columns (C1 = year, C2 = region, C3 = number of telephones x 1000):
+
+```{r echo = TRUE}
+tall.df <- data.frame(matrix(data = NA, nrow = 0, ncol = 3))
+```
+
+Iterate through each element in the original wide.df:
+
+```{r echo = TRUE}
+for(i in 1:nrow(wide.df)){
+  for(j in 1:ncol(wide.df)){
+    tall.column1 <- rownames(wide.df)[i]
+    tall.column2 <- colnames(wide.df)[j]
+    tall.column3 <- wide.df[i,j]
+    tall.row <- c(tall.column1, tall.column2, tall.column3)
+    tall.df <- rbind(tall.df, tall.row)
+  }
+}
+colnames(tall.df) <- c("year", "region", "num.tel")
+```
+
+Printing a few rows (head) of the resulting tall.df. This result was created using nested loops and dimnames. To see the complete tall.df, use **print(tall.df, row.names = FALSE)**:
+
+```{r echo = TRUE}
+print(head(x = tall.df), row.names = FALSE)
+```
+| Note: We can sort the values by swapping the two for-loops in the nested loop. Alternatively, we can sort the resulting data frame using the function **sort( )**.
+
+## Solution 2
+
+### Converting wide format in long/tall format using the function expand.grid, dimnames, and a single for-loop
+
+The function expand.grid will create a data frame with all combinations of rows and columns names
+
+```{r echo = TRUE}
+
+tall.df.solution.2 <- expand.grid(year = rownames(x = wide.df),
+                                  region = colnames(x = wide.df))
+```
+
+Printing a few rows (head) of the resulting expanded grid. To see the expand.grid, use **print(tall.df.solution.2, row.names = FALSE)**
+
+```{r echo = TRUE}
+
+print(head(tall.df.solution.2), row.names = FALSE)
+```
+
+Create an empty vector r * c, where r is the number of rows (years) and c is the number of columns (regions). This empty vector will store the cell values (number of telephones * 1000) according to each combination year x region.
+
+```{r echo = TRUE}
+num.tel <- rep(x = NA, nrow(x = tall.df.solution.2))
+```
+
+Combining the empty vector (number of telephones) with the expand.grid data frame
+
+```{r echo = TRUE}
+
+tall.df.solution.2 <- cbind(tall.df.solution.2, num.tel)
+
+```
+
+Using a for loop to iterate through the tall.df.solution.2 data frame, read the region and year in each row of the tall.df.solution.2 data frame, and use the dimnames to pull the respective cell value (# of telephones) in the wide.df.
+
+```{r echo = TRUE}
+
+for(i in 1:nrow(tall.df.solution.2)){
+  cell.value <- wide.df[tall.df.solution.2$year[i], tall.df.solution.2$region[i]]
+  tall.df.solution.2$num.tel[i] <- cell.value
+}
+
+print(head(tall.df.solution.2), row.names = FALSE)
+```
+
+The for loop above runs fast and keeps the code clean. However, depending on the R version, the for loop above might not work every time. Therefore, the alternative below can be used for higher compatibility. Note that we had to include more lines of code.
+
+Alternative (more compatible, but more complex):
+
+```
+for(i in 1:nrow(tall.df.solution.2)){
+
+  target.row <- rownames(wide.df) == tall.df.solution.2[i,1]
+  target.column <- colnames(wide.df) == tall.df.solution.2[i,2]
+
+  cell.value <- wide.df[target.row, target.column]
+  
+  tall.df.solution.2[i,3] <- cell.value
+  
+}
+```
+
+## Solution 3 
+
+### Appending 1 to an external file
+
+Create the output file in the working directory. The output file will contain the column names.
+The function write is an alias for the function write.table (), but simpler (fewer parameters).
+
+```{r echo = TRUE}
+
+write(x = c("year", "region", "num.tel"), file = "tall.df.solution.3.txt", ncolumns = 3, append = FALSE, sep = "\t")
+
+```
+
+Iterate through each element in the original wide.df, and append the result to the  "tall.df.solution.3.txt" file:
+
+```{r echo = TRUE}
+for(i in 1:nrow(wide.df)){
+  for(j in 1:ncol(wide.df)){
+    tall.column1 <- rownames(wide.df)[i]
+    tall.column2 <- colnames(wide.df)[j]
+    tall.column3 <- wide.df[i,j]
+    tall.row <- c(tall.column1, tall.column2, tall.column3)
+    write(x = tall.row, file = "tall.df.solution.3.txt", append = TRUE, sep = "\t", ncolumns = 3)
+  }
+}
+```
+
+Checking the result of the solution 3:
+
+```{r echo = TRUE}
+res.solution.3 <- read.table(file = "tall.df.solution.3.txt", header = TRUE, sep = "\t")
+print(head(res.solution.3), row.names = FALSE)
+```
+
+| **Note:** It is possible to create more solutions for this situation. It all depends on the application and the "dimensionality" of the original data. The solutions that involves multiple nested for-loops may require more time to complete, since the iterations will go through every element in the data frame. However, the operations within the for-loops also play important role to determine the required time to complete the task using each solution. Moreover, the solution 3 may be an option to save memory, since the each row of the "growing tall/long data frame" will be appended to an external file, and, therefore, it will not be kept in the random access memory (RAM).
+
+## Solution 4 
+### a nice succinct script from Kirk Green using expand.grid
+
+```{r echo = TRUE}
+ 
+new_data_set <- expand.grid(rownames(WorldPhones), colnames(WorldPhones))
+ 
+for(iter in 1:(ncol(WorldPhones))){
+  for(jiter in 1:nrow((WorldPhones))){
+    new_data_set[(iter-1)*nrow(WorldPhones)+jiter,3] = WorldPhones[jiter,iter]
+  }
+}
+ 
+print (head(new_data_set, row.names = FALSE))
+```
+## Solutions 5 and 6 
+### by Lucas Borges, rely on converting the WorldPhones matrix into a data frame first to simplify the task
+
+```{r echo = TRUE}
+WorldPhonesDF <- as.data.frame(WorldPhones)
+```
+
+## Solution 5
+
+```{r echo = TRUE}
+new_WorldPhones <- data.frame(matrix(ncol = 3,nrow = 0))
+colnames(new_WorldPhones) <- c("years","regions","num.phones")
+
+for (i in seq(ncol(WorldPhonesDF))){
+  region <- colnames(WorldPhonesDF)[i]
+  years <- row.names(WorldPhonesDF)
+  phones <- WorldPhonesDF[,i]
+  new_data <- data.frame(years,region,phones)
+  new_WorldPhones <- rbind(new_WorldPhones,new_data)
+}
+
+print(head(new_WorldPhones, row.names=FALSE))
+```
+
+## Solution 6
+
+```{r echo = TRUE}
+a <- row.names(WorldPhonesDF)
+b <- colnames(WorldPhonesDF)
+alt_phones <- expand.grid(a,b)
+
+
+#create empty column
+newcol <- cbind(rep(NA,nrow(alt_phones)))
+alt_phones <- cbind(alt_phones,newcol)
+
+#append phone info
+for (i in seq(nrow(alt_phones))){
+  alt_phones[i,3] <- WorldPhonesDF[alt_phones[i,1],alt_phones[i,2]]
+}
+
+print (head(alt_phones, row.names = FALSE))
+
+```
+ 
+## Solution 7. From MH. 
+
+#### Perhaps the lamest, but has the merit of not creating a new object that consumes memory before beginning computation. This approch is useful if writing a very large dataset to a file or other data structure out of memory.
+
+
+``` {r echo=TRUE}
+#create new clean matrix
+data("WorldPhones")  
+new_WorldPhones <- matrix(ncol = 3,nrow = 0)
+colnames(new_WorldPhones)<-c("Year","Region","Phones (thousand)")
+
+for (i in (seq (1:ncol(WorldPhones)))) {
+  for (j in (seq (1:nrow(WorldPhones)))) {
+    rownumber=(i*j)
+    new_WorldPhones<-rbind(new_WorldPhones,c(rownames(WorldPhones)[j],colnames(WorldPhones)[i],WorldPhones[j,i]))
+  }
+}
+head(new_WorldPhones)
+
+```
+
+
+
+
+

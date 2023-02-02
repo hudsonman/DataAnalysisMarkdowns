@@ -1,0 +1,316 @@
+---
+title: "Clustering and Classification"
+output: html_document
+---
+
+In today's lab class, we are examining the process of clustering datasets and determining how many clusters the data should be partitioned.
+
+```{r echo = T}
+if(!require(package = "ClusterR", quietly = T)){
+install.packages("ClusterR")
+}
+if(!require(package = "cluster", quietly = T)){
+install.packages("cluster")
+}
+if(!require(package = "ade4", quietly = T)){
+install.packages("ade4")
+}
+library(ClusterR)
+library(cluster)
+library(ade4)
+```
+
+### Requesting the iris data
+
+```{r echo = T}
+data(iris)
+iris_1 <- iris[, -5]
+```
+
+| Note that the random nature of the clustering can lead to different results on each run with some datasets.
+
+To make data consistent, use:
+
+```{r echo = T}
+set.seed(999)
+```
+
+### Now cluster the data:
+
+```{r echo = T}
+kmeans.cl <- kmeans(iris_1, centers = 3, nstart = 20)
+```
+
+### Ok now plot the result:
+
+```{r echo = T}
+plot(iris_1[c("Sepal.Length", "Sepal.Width")])
+
+plot(iris_1[c("Sepal.Length", "Sepal.Width")], 
+col = kmeans.cl$cluster, 
+main = "K-means with 3 clusters")
+```
+
+### Plotting cluster centers
+
+```{r echo = T}
+kmeans.cl$centers
+```
+
+| cex is font size, pch is symbol
+
+```{r echo = T}
+plot(iris_1[c("Sepal.Length", "Sepal.Width")])
+plot(iris_1[c("Sepal.Length", "Sepal.Width")], 
+col = kmeans.cl$cluster)
+plot(iris_1[c("Sepal.Length", "Sepal.Width")], 
+col = kmeans.cl$cluster, 
+main = "K-means with 3 clusters")
+points(kmeans.cl$centers[, c("Sepal.Length", "Sepal.Width")], 
+       col = 1:3, pch = 8, cex = 3) 
+```  
+
+### Visualizing clusters
+
+```{r echo = T}
+y_kmeans <- kmeans.cl$cluster
+clusplot(iris_1[, c("Sepal.Length", "Sepal.Width")],
+         y_kmeans,
+         lines = 0,
+         shade = TRUE,
+         color = TRUE,
+         labels = 2,
+         plotchar = FALSE,
+         span = TRUE,
+         main = paste("Cluster iris"),
+         xlab = 'Sepal.Length',
+         ylab = 'Sepal.Width')
+```      
+
+but...
+
+```{r echo = T}
+kmeans.cl <- kmeans(iris_1, centers = 4, nstart = 20)
+y_kmeans <- kmeans.cl$cluster
+clusplot(iris_1[, c("Sepal.Length", "Sepal.Width")],
+         y_kmeans,
+         lines = 0,
+         shade = TRUE,
+         color = TRUE,
+         labels = 2,
+         plotchar = FALSE,
+         span = TRUE,
+         main = paste("Cluster iris"),
+         xlab = 'Sepal.Length',
+         ylab = 'Sepal.Width')
+```  
+
+or...
+
+```{r echo = T}
+kmeans.cl <- kmeans(iris_1, centers = 2, nstart = 20)
+y_kmeans <- kmeans.cl$cluster
+clusplot(iris_1[, c("Sepal.Length", "Sepal.Width")],
+         y_kmeans,
+         lines = 0,
+         shade = TRUE,
+         color = TRUE,
+         labels = 2,
+         plotchar = FALSE,
+         span = TRUE,
+         main = paste("Cluster iris"),
+         xlab = 'Sepal.Length',
+         ylab = 'Sepal.Width')
+``` 
+
+So how do we determine the right number of clusters?
+One method: **elbow method**
+
+### Compute and plot within cluster sum of squares for k = 1 to k = 15.
+
+```{r echo = T}
+k.max <- 15
+wss <- sapply(1:k.max, function(k){kmeans(iris_1, k,                nstart=50,iter.max = 15 )$tot.withinss})
+
+plot(1:k.max, wss,
+    type="b", pch = 19, frame = FALSE, 
+    xlab="Number of clusters K",
+    ylab="Total within-clusters sum of squares")
+```
+
+Where is the elbow? How many species are there?
+
+## Another example
+
+The data set "casitas" is part of the ade4 package. The ade4 package consists of a set of functions for analysis of ecological data. The "casitas" data set contains allozyme polymorphisms in 4 groups of mice:
+
+* 24 - *Mus musculus domesticus*
+* 11 - *M. musculus castaneus*
+* 9 - *M. musculus musculus*
+* 30 - Wild mice population from the Lake Casitas (California)
+
+### Requesting the data
+
+```{r echo = T}
+data("casitas")
+```
+
+### Data processing
+
+Let's check the casitas-data:
+
+```{r echo = T}
+head(casitas[,1:5])
+```
+
+If we take a look into the casitas-data, we can see the values in the variables are different compared to the iris-data variables. That is because the allozyme polymorphisms are types of markers that allow one to distinguish multiple alleles in a locus. Nowadays, the use of allozyme polymorphism is very limited.
+
+The structure of the casitas-data is described in the ade4 help page (```?casitas```). "*Each value contains 6 characters coding for two alleles. The missing values are coding by '000000'*". So, there are three characters per allele in a given cell.
+
+Let's count the number of characters per cell in the casitas-data:
+
+```{r echo = T}
+# Since there are 74 rows and 15 columns, we expect to see 1110 cells with 6 characters and nothing else.
+table(unlist(apply(casitas, 1, function (my.variable) lapply(strsplit(my.variable, split = ""), length))))
+```
+
+As we discussed earlier in our class, understanding the structure of the data and the importance of data processing are fundamental aspects to perform the data analysis. Although data processing is not the focus of the today's class, we will need to process casitas-data to perform the clustering analysis.
+
+There are several ways to code this data.
+
+For example:
+1) One can opt to code every allele as a variable and the values would be the presence/absence of a given allele in a given sample.
+2) Another way to code every allele as a variable and the values would be the dosage of each allele (i.e., the allele count would be preserved).
+
+To preserve the maximum intra-locus information, we are going to use the method 2 and code every allele as an individual variable, and the values in a given sample in a given variable will be the count of that allele in that sample.
+
+The script below will split the 6-character-locus matrix in two subsets containing the allele 1 (casitas.A1) and the allele 2 (casitas.A2):
+
+```{r echo = T}
+casitas.A1 <- apply(X = casitas, MARGIN = 2, FUN = substring, first = 1, last = 3)
+casitas.A2 <- apply(X = casitas, MARGIN = 2, FUN = substring, first = 4, last = 6)
+```
+
+Let's ensure the positional information for each sample will be preserved in both subsets:
+```{r echo = T}
+# This step is not mandatory. However, it is useful for tracking the changes, and it does not use many resources.
+sample.id <- 1:nrow(casitas)
+casitas.A1.sid <- cbind(sample.id, casitas.A1)
+casitas.A2.sid <- cbind(sample.id, casitas.A2)
+```
+
+The function below will combine both data sets and the resulting data will contain information for individual alleles in each loci:
+```{r echo = T}
+casitas.A1.A2.sid <- rbind(casitas.A1.sid, casitas.A2.sid)
+```
+
+Now, it is easier to calculate the allele frequencies. So, we can use that information to impute the missing data *000*. There are several ways to impute missing data. In this case, we can leverage the allele frequency information and use it to impute the missing data with the most frequent allele.
+
+```{r echo = T}
+casitas.A1.A2.sid[casitas.A1.A2.sid == "000"] <- NA
+
+for(i in 2:ncol(casitas.A1.A2.sid)){
+  frequency <- sort(table(casitas.A1.A2.sid[,i]), decreasing = T)
+  val.mode <- names(frequency)[1]
+  casitas.A1.A2.sid[,i][is.na(casitas.A1.A2.sid[,i])] <- val.mode
+}
+```
+
+The last step in the casitas-data processing is to create a variable for each allele and report the absolute frequency of that allele for every sample in the data.
+
+``` {r echo = T}
+casitas.A1.A2.sid <- apply(casitas.A1.A2.sid, 2, as.numeric)
+converted.casitas <- data.frame(matrix(data = NA, nrow = length(unique(sample.id)), ncol = 0))
+for(i in 2:ncol(casitas.A1.A2.sid)){
+  marker.name <- colnames(casitas.A1.A2.sid)[i]
+  frequency <- by(as.factor(casitas.A1.A2.sid[,i]), casitas.A1.A2.sid[,1], table)
+  data.freq <- do.call("rbind", frequency)
+  colnames(data.freq) <- paste0(marker.name, ".", colnames(data.freq))
+  converted.casitas <- cbind(converted.casitas, data.freq)
+}
+```
+
+### Clustering
+
+Compute and plot within cluster sum of squares from K = 1 to K = 10:
+
+```{r echo = T}
+casitas.k.max <- 10
+casitas.wss <- sapply(1:casitas.k.max, function(k){kmeans(converted.casitas, k, nstart = 10, iter.max = 50)$tot.withinss})
+
+plot(1:casitas.k.max, casitas.wss,
+    type="b", pch = 19, frame = FALSE,
+    main = "Total WSS - Casitas",
+    xlab="Number of clusters K",
+    ylab="Total within-clusters sum of squares", cex.axis = 0.75, xaxt = "n")
+axis(1, at = c(1:10), labels = c(1:10), cex.axis = 0.75)
+
+```
+
+It can be challenging to identify the point of inflection using the elbow method.
+Depending on the study, one can select the point which we observe negligible reductions in WSS with the increase in the number of K.
+
+Let's plot the casitas cluster WSS again with some extra information to help us to identify the point of inflection:
+
+```{r echo = T}
+plot(1:casitas.k.max, casitas.wss,
+    type="b", pch = 19, frame = FALSE,
+    main = "Total WSS - Casitas - With Guide Lines",
+    xlab="Number of clusters K",
+    ylab="Total within-clusters sum of squares",
+    xaxt = "n", cex.axis = 0.75)
+
+diff.casitas.WSS <- diff(casitas.wss)
+pct.diff <- round(diff.casitas.WSS[1:5]/casitas.wss[1:5]*100, 2)
+abline(h = casitas.wss[2:6], lty = 2)
+axis(1, at = c(1:10), labels = c(1:10), cex.axis = 0.75)
+par(xpd = T)
+text(x = casitas.k.max+1.5, y = casitas.wss[2:6], paste0(pct.diff[1:5], "%"), cex = 0.7, col = "red")
+```
+
+Compute K means for K == 3 and K == 4:
+
+```{r echo = T}
+casitas.kmeans.cl.K3 <- kmeans(converted.casitas, centers = 3, nstart = 5, iter.max = 1000)
+casitas.kmeans.cl.K4 <- kmeans(converted.casitas, centers = 4, nstart = 5, iter.max = 1000)
+```
+
+Compute PCA to reduce the dimensionality of the casitas data:
+
+```{r echo = T}
+casitas.PCA <- prcomp(converted.casitas)
+```
+
+Visualizing the 4 casitas clusters:
+
+```{r echo = T}
+casitas.K4.k.clusters <- casitas.kmeans.cl.K4$cluster
+clusplot(casitas.PCA$x[,c(1,2)],
+         casitas.K4.k.clusters,
+         lines = 0,
+         shade = TRUE,
+         color = TRUE,
+         labels = 2,
+         plotchar = FALSE,
+         span = TRUE,
+         main = paste("Casitas - Clusters - K4"),
+         xlab = 'PC1',
+         ylab = 'PC2')
+```
+
+Visualizing the 3 casitas clusters:
+
+```{r echo = T}
+casitas.K3.k.clusters <- casitas.kmeans.cl.K3$cluster
+clusplot(casitas.PCA$x[,c(1,2)],
+         casitas.K3.k.clusters,
+         lines = 0,
+         shade = TRUE,
+         color = TRUE,
+         labels = 2,
+         plotchar = FALSE,
+         span = TRUE,
+         main = paste("Casitas - Clusters - K3"),
+         xlab = 'PC1',
+         ylab = 'PC2')
+```

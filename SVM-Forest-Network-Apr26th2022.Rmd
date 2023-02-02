@@ -1,0 +1,279 @@
+---
+title: "Trees, forests, networks"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preparing the environment
+
+#### Install and/or load the packages
+```{r echo = T}
+loading.packages <- function(warn = FALSE) {
+if(!require(package = "e1071", quietly = T, warn.conflicts = F)){
+  install.packages("e1071")}
+if(!require(package = "caret", quietly = T, warn.conflicts = F)){
+  install.packages("caret")}
+if(!require(package = "randomForest", quietly = T, warn.conflicts = F)){
+  install.packages("randomForest")}
+if(!require(package = "neuralnet", quietly = T, warn.conflicts = F)){
+  install.packages("neuralnet")}
+if(!require(package = "grid", quietly = T, warn.conflicts = F)){
+  install.packages("grid")} # For neuralnet plots
+if(!require(package = "gplots", quietly = T, warn.conflicts = F)){
+  install.packages("gplots")} # For heatmaps
+}
+# This resource helps to keep the Rmarkdown free of cluttering messages - use it only if you are sure that the warnings and messages are not critical
+suppressWarnings(suppressMessages(loading.packages()))
+```
+
+#### Load iris dataset
+```{r echo = T}
+
+data(iris)
+iris.data <- subset(x = iris, select = -Species)
+iris.species <- subset(x = iris, select = Species)
+iris.species <- iris.species$Species
+
+```
+
+#### Set the seed
+
+```{r echo = T}
+set.seed(seed = 2545846)
+```
+
+## 1 - SVM
+
+#### Computing SVMs
+
+```{r echo = T}
+suppressWarnings(suppressMessages(library(e1071)))
+suppressWarnings(suppressMessages(library(dplyr)))
+model.svm <- svm(x = iris.data, y = iris.species, type="C")
+```
+
+#### Computing and Plotting PCA
+
+```{r echo = T}
+plot(cmdscale(dist(iris.data)),
+     col = as.integer(iris.species),
+     pch = c("o","+")[1:150 %in% model.svm$index + 1])
+
+```
+
+You should have created a plot of the iris dataset with the classification parameters learned by the algorithm. What do the “+” characters on the plot represent?
+
+#### Use the model to classify the iris data:
+
+```{r echo = T}
+
+pred <- predict(model.svm, iris.data)
+table(pred, iris.species)
+
+```
+
+What are the false positive, false negative, true positive and true negative rates for classification using this model?
+... we can't really tell properly as we trained on the same data we classified.
+
+
+#### Let's load some new packages:
+
+
+```{r echo = T}
+suppressWarnings(suppressMessages(library(randomForest)))
+suppressWarnings(suppressMessages(library(caret)))
+```
+
+#### Now we will split the data into learning and training data
+
+```{r echo = T}
+
+# Creating a vector for sub-setting the iris dataset
+
+iris.indexes <- createDataPartition(iris$Species, p = 0.7, list = FALSE)
+
+# Subsetting the iris dataset
+
+train <- iris[iris.indexes, ]
+test <- iris[-iris.indexes, ]
+train.data <- subset(x = train, select = -Species)
+train.species <- subset(x = train, select = Species)
+train.species <- train.species$Species
+test.data <- subset(x = test, select = -Species)
+test.species <- subset(x = test, select = Species)
+test.species <- test.species$Species
+
+```
+
+#### Train on part of the data, classify on the other part
+
+```{r echo = T}
+model.svm <- svm(x = train.data, y = train.species, type="C")
+pred <- predict(model.svm, test.data)
+```
+
+#### Print "confusion matrix"
+
+```{r echo = T}
+table(pred, test.species)
+```
+
+## 2 - Random Forest
+
+Let's perform data classification in subsets of iris dataset using Random Forests
+
+#### Loading the packages
+
+We will be using the package randomForest to perform the data classification, and the packages cvms, ggimage, and rsvg to visualize the results.
+
+```{r echo = T}
+suppressWarnings(suppressMessages(library(randomForest)))
+suppressWarnings(suppressMessages(library(gplots)))
+```
+
+#### Preparing the subsets
+
+Let's suppose we have two subsets of the iris dataset: training set and testing set.
+The iris dataset contains 150 rows. The training and testing sets will contain a fraction of the original dataset.
+The 5th column in the iris dataset contains the species information. However, for this example, let's suppose we don't have the species information for the "testing set". So we will remove it, and try to recover that information using the RF algorithm.
+
+```{r echo = T}
+
+# Creating the training set
+
+iris.training.set <- train
+
+# Creating the testing set - the "Species" column will be removed from the iris testing set (masked)
+
+iris.testing.set <- test
+iris.masked.tgt.set <- subset(x = iris.testing.set, select = -c(Species))
+iris.tgt.spec.info <- iris.testing.set[,5]
+```
+
+#### Performing the Random Forest algorithm
+
+The command below will perform the random forest algorithm. The parameters are similar to those used to construct the model in the class about linear regression. The parameter **x** contains the matrix of predictors and the parameter **y** contains the response variable.
+
+```{r echo = T}
+
+iris.RF <- randomForest(x = iris.training.set[,-5],
+                             y = as.factor(iris.training.set[,5]))
+
+# Note: Since the parameter "y" is a factor, the algorithm will perform classification
+```
+
+#### Evaluating the model
+
+```{r echo = T}
+print(iris.RF)
+```
+    
+#### Classifying the iris testing set
+
+Since we established the model using the command **randomForest**, we can predict the values (species) in the **iris testing set** - a subset containing only a % of the original iris data set - using the command **predict**.
+
+```{r echo = T}
+iris.pred.tgt.species <- predict(object = iris.RF, newdata = iris.masked.tgt.set)
+```
+
+#### Extracting and visualizing the confusion matrix
+
+Let's evaluate our data classification using a confusion matrix.
+
+```{r echo = T}
+
+# Creating the confusion matrix
+
+iris.confusion.matrix <- table(testing = iris.tgt.spec.info, predicted = iris.pred.tgt.species)
+
+# Reformatting the confusion matrix to produce the heatmaps
+
+df.iris.confusion.matrix <- data.frame(rbind(iris.confusion.matrix))
+
+# Since the sample sizes by class are not balanced, the heatmap colors will represent the % of true testing values
+
+normalized.iris.confusion.matrix <- apply(X = df.iris.confusion.matrix, MARGIN = 1, FUN = function(x) c(x/sum(x))*100)
+
+# Visualising the confusion matrix heatmap
+
+heatmap.2(x = normalized.iris.confusion.matrix,
+          col = rev(heat.colors(25)),
+          Rowv = FALSE,
+          Colv = FALSE,
+          dendrogram = "none",
+          trace = "none",
+          cellnote = t(iris.confusion.matrix),
+          notecol = "blue",
+          notecex = 1.5,
+          key.title = "% of actual class",
+          cexRow = 0.9,
+          cexCol = 0.9,
+          xlab = "Testing",
+          ylab = "Predicted")
+
+
+
+```
+
+
+## 3 - The "caret" method
+
+Caret is a popular R package that uses its own regression-based method
+it's quite popular so let's see how well it works
+
+```{r echo = T}
+tc <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+
+cmodel <- train(Species~., data=train, method="rf", trControl=tc)
+print(cmodel)
+
+cpred <- predict(cmodel, test)
+cm <- confusionMatrix(test$Species, cpred)
+print(cm)
+```
+
+## 4 - Neural networks
+
+#### OK, now let's try neural nets
+
+```{r echo = T}
+# The package neuralnet will be used to train the neural networks
+
+suppressWarnings(suppressMessages(library(neuralnet)))
+
+# The package grid will be used to visualise the neural networks
+
+suppressWarnings(suppressMessages(library(grid)))
+
+# Extracting the data points from the testing subset
+
+xtest <- test[, -5]
+
+# Extracting the Species information from the testing subset
+
+ytest <- test[, 5]
+
+# Training the neural networks
+
+nnet <- neuralnet(Species~., train, hidden = c(4,3), linear.output = FALSE)
+
+# Neural nets are constructed as grid graphical object (grob). The package grid allows us to draw the neural nets
+
+nnet.plot <- grid.grabExpr(expr = plot(nnet), wrap = TRUE, wrap.grobs = TRUE)
+grid.draw(nnet.plot)
+
+```
+
+#### And try classifying with it
+
+```{r echo = T}
+ypred <- neuralnet::compute(nnet, xtest)
+ 
+yhat <- ypred$net.result
+print(yhat)
+```
+
+
