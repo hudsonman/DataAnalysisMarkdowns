@@ -1,0 +1,332 @@
+---
+title: 'Data processing, custom functions, and for loops'
+author: 'CPSC499 Spring 2023'
+date: 'February 7th, 2023'
+output: html_document
+---
+
+# Introduction
+
+In our lab section, we will be processing the *iris* data set - one of the exampling data sets built-in into R.
+We will be loading it from a text file stored in our operating system to simulate a scenario in which we would need to load our project's data.
+We will also perform basic operations using the iris data set and the subsets we created.
+Then, we will explore and create custom functions while analyzing the iris data set.
+
+# Workflow
+
+### 1 - Importing data stored on the operating system into R
+
+Firstly, we will import a version of the data set *iris* stored in our operating system (*irisdata.txt*).
+There are several ways to import the data into R.
+We will focus on the command `read.table()`, a versatile way to import tables stored in text files, table-delimited files, or comma-separated files into R.
+
+Before we proceed, open the file *irisdata.txt* using your preferred plain text editor (e.g., Notepad, gedit, Text Edit). Take a good look at the data:
+
+ * How many columns are in the data?
+ * Is there a header in the data? What are the column names?
+ * What kind of character is delimiting columns in the data (e.g., white spaces, tabs, commas, etc.)?
+
+```
+irisdata <- read.table(file = "irisdata.txt", header = TRUE, sep = "\t")
+```
+Can you guess the parameters within the `read.table()` function mean?
+
+##### **Time for Practice:**
+
+Let's do a quick exploring in the data.
+
+* How many rows are in the data? Use: `nrow(irisdata)`
+* How many columns are in the data? Use: `ncol(irisdata)`
+* What are the row names? Use: `rownames(irisdata)`
+* What are the column names? Use: `colnames(irisdata)`
+* What is the total number of elements in the matrix?
+* How many dimensions can be expected in a vector? How many dimensions can be expected in a matrix?
+
+### 2 - Manipulating dimension names (a.k.a row names and column names)
+
+We can change the row names and the column names of our data. This is a useful resource for data processing and data analysis. A matrix or data frame with well named dimensions allows the user to apply functions to specific columns and rows more efficiently - also, this resource helps to prepare tables for publications.
+
+Let's create a copy of our data. This copy will be used only for us to understand how we manipulate the dimension names:
+
+```
+copy.of.irisdata <- irisdata # This command will create a copy of the irisdata named copy.of.irisdata
+```
+To check the current row names and column names:
+
+```
+rownames(copy.of.irisdata) # Retrieves the row names
+colnames(copy.of.irisdata) # Retrieves the column names
+```
+
+Now, let's create a vector that will be used as new column names, and replace the original column names with the new column names.
+```
+new.column.names <- c("C1", "Second.Column", "Third.Column", "The4th", "LastColumn") # New column names
+colnames(copy.of.irisdata) <- new.column.names # Assigns the new column names to the data
+colnames(copy.of.irisdata) # Retrieve the column names
+```
+
+| **Note**: In R, row names must be unique while column names can be repeated. However, duplicated column names can cause trouble for data processing and data analysis if the column names are needed in any part of the R script.
+
+##### **Time for Practice:**
+
+* Import the data CO2 - The data set CO2 is built in in R. However, for this practice, please, use the command *read.table()* and the provided *CO2.txt* file.
+* How many rows are in the CO2 data?
+* How many columns are in the CO2 data?
+* What are the column names in CO2 data?
+* Suggest and assign new column names to every column in CO2 data
+
+### 3 - Sub-setting and Filtering the Data
+
+The idea that a given task can be performed in multiple ways is no longer new in R.
+Similar to the tasks we performed before and the others we will perform later, sub-setting and filtering can be done in multiple ways. Here we will learn how to sub-set and filter vectors and matrices using positional index (i.e., order of the elements) and Boolean logical vectors (i.e., true and false) to select specific elements in a vector or two-dimensional arrays (matrices and data frames).
+
+#### 3.1 Sub-setting vectors
+
+Let's create a vector containing a sequence of **10 letters** from **a** to **j**:
+
+```
+my.abc.seq <- c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")
+```
+Print the third element in the *my.abc.seq* vector:
+```
+print(my.int.seq[3])
+```
+Create and print a new vector named *first.five.letters* containing the first five elements in the *my.abc.seq* vector:
+```
+first.five.letters <- my.abc.seq[1:5]
+# or
+# first.five.letters <- my.abc.seq[c(1,2,3,4,5)]
+print(first.five.letters)
+```
+Now create and print a new vector named *my.vowels*:
+```
+my.vowels <- my.abc.seq[c(1,5,9)]
+print(my.vowels)
+```
+As we could note, vector with positional indexes can be used to select specific elements in a vector or matrices.
+
+We will use a slightly different approach to select specific elements in a vector or matrix. This approach will be *Boolean logical vectors*. A logical vector of length **n** can be used to select specific elements in another vector of the same length **n**.
+
+| **Note:** In fact, a logical vector of any length can be used to filter a given target vector or elements. However, on one hand, if we use a logical vector smaller than the target vector, the logical vector will be recycled. On the other hand, if we use a logical vector bigger than the target vector, *NA* will be assigned in the resulting vector to each exceeding elements in the logical vector. Therefore, it is generally a good idea to work with vectors of the same length.
+
+Create and print the following vector:
+
+```
+num.seq.1.to.10 <- 1:10
+print(num.seq.1.to.10)
+```
+To select the only the numbers < than 5
+```
+num.less.than.5 <- num.seq.1.to.10[num.seq.1.to.10 < 5]
+print(num.less.than.5)
+```
+To select the numbers < or = to 5
+```
+num.less.or.eq.5 <- num.seq.1.to.10[num.seq.1.to.10 <= 5]
+print(num.less.or.eq.5)
+```
+What is the difference between the objects *num.less.than.5* and *num.less.or.eq.5*?
+
+Now, let's investigate how that works. To do that, let's isolate the logical test inside the square brackets:
+
+```
+examp.logic.test <- num.seq.1.to.10 <= 5
+print(examp.logic.test)
+```
+
+What is the content of the object *examp.logic.test*? Can you guess how the content of the object *examp.logic.test* influences how the object *num.seq.1.to.10* is sub-set or filtered?
+
+This resource can be applied to vectors of characters, too.
+Let's consider the following example:
+
+* The vector *food* contains the name of different foods
+* The vector *food.type* contains the classification of each food in the vector *food*
+
+Let's select only the fruits in the vector *food* based on a test applied on the vector *food.type*:
+
+```
+food <- c("mango", "potato", "rice", "melon", "orange", "maize", "banana", "beetroot")
+food.type <- c("fruit", "vegetable", "grain", "fruit", "fruit", "grain", "fruit", "vegetable")
+fruits <- food[food.type == "fruit"]
+print(fruits)
+```
+##### **Time for Practice:**
+
+ * Select only the **vegetables** in the vector *food* based on the vector *food.type*.
+
+#### 3.2 Sub-setting matrices
+
+Matrices are two-dimensional arrays. While a vector (one dimension array) uses only one argument inside the square brackets to apply a filter, matrices can be filtered simultaneously by row and column. Hence, two arguments can be included inside the square brackets. The first argument represents the rows, while the second argument represents the columns.
+
+Example:
+
+```{r echo = TRUE}
+# Creating dummy matrix and assigning fake values
+my.matrix <- as.data.frame(matrix(data = NA, nrow = 10, ncol = 5)) # Create a dummy matrix with 10 rows and 5 columns
+my.matrix[,1] <- paste("Ind.", seq(1,10), sep = "") # Create a dummy vector with sample names
+my.matrix[,2] <- round(x = runif(n = 10, min = 1, max = 10), digits = 2) # Create dummy values for a hypothetical variable
+my.matrix[,3] <- round(x = runif(n = 10, min = 11, max = 20), digits = 2) # Create dummy values for a hypothetical variable
+my.matrix[,4] <- round(x = runif(n = 10, min = 21, max = 30), digits = 2) # Create dummy values for a hypothetical variable
+my.matrix[,5] <- round(x = runif(n = 10, min = 31, max = 40), digits = 2) # Create dummy values for a hypothetical variable
+# Assigning column names
+colnames(my.matrix) <- c("Names", "Var1", "Var2", "Var3", "Var4")
+# Checking out the result
+print(my.matrix, row.names = FALSE)
+```
+
+Now, let's select the first five rows and the columns number 1, 4, and 5. **Note** that the first column contains the names, and the columns number 4 and 5 correspond to the Var3 and Var4, respectively.
+
+```{r echo = TRUE}
+my.filtered.matrix <- my.matrix[c(1,2,3,4,5), c(1,4,5)]
+print(my.filtered.matrix)
+```
+
+As we can see in the object *my.filtered.matrix*, the object *my.matrix* was subjected to filters in two dimensions. The dimension is delimited by a comma (,) inside the square brackets []. The first argument (before the comma) corresponds to the rows, while the second argument (after the the comma) corresponds to the columns.
+
+
+##### **Time for Practice:**
+
+* Using the *irisdata* that we imported before, create 3 sub-sets of data corresponding to each of the iris species (setosa, virginica, and versicolor). Use logical vectors to define the range of each species in the data. Name each subset with a different name (e.g., setosa.data, virginica.data, versicolor.data, etc.)
+
+* Create another sub-set of the data with the samples which the Petal Width is < 1. Name this subset with a representative name (e.g., iris.pw.1)
+
+* Export the results (4 matrices) to different tsv files (tab separated values). The function *write.table* is a versatile function for exporting data to the operating system. **Note:** Remember to change the the parameter *x* (object) and *file* (file name) in the command below.
+
+```
+write.table(x = objectname, file = "filename.txt", quote = FALSE, sep = "\t", row.names = FALSE, col.names = TRUE)
+```
+
+### 4 Creating custom functions
+
+There are many built-in functions in R (base) that allow us to run a variety of data processing, analysis, and data visualization. Besides, many other functions are available in open-source packages developed for the R environment. However, sometimes we need R to run a task in a specific way that is not available natively in R or in other R packages. Therefore, understanding how we can create our own functions can be handy for our projects' data processing and data analysis.
+In this section, we will be learning how to create custom functions in R. Although the custom functions that we will implement in our class today are likely available in R (or other R packages), having a general idea on how custom functions work can help us to implement any kind of function in the future.
+
+A function is a command that triggers a series of tasks. For example, the functions `sum(c(1,2,1,2,3,2,3,1,3))` will create a vector with the elements within the inner pair of parenthesis and return the sum of elements in the vector. The internal function *c* creates the vector, while the outer function *sum* returns the sum of the elements in the vector.
+
+Let's suppose we have the following matrix:
+
+```{r echo = TRUE}
+# Creating dummy matrix and assigning fake values
+dummy.matrix <- as.data.frame(matrix(data = NA, nrow = 10, ncol = 4)) # Create a dummy matrix with 10 rows and 5 columns
+dummy.matrix[,1] <- paste("Obs.", seq(1,10), sep = "") # Create a dummy vector with sample names
+dummy.matrix[,2] <- rep(10, 10) # Assigns a vector of ten 10s to the second column
+dummy.matrix[,3] <- rep(20, 10) # Assigns a vector of ten 20s to the third column
+dummy.matrix[,4] <- rep(30, 10) # Assigns a vector of ten 30s to the fourth column
+# Assigning column names
+colnames(dummy.matrix) <- c("Observations", "vecof10s", "vecof20s", "vecof30s")
+# Checking out the result
+print(dummy.matrix, row.names = FALSE)
+```
+
+Now, let's create a function to compute the means, then we can use that function to calculate the means in each individual numeric column in the matrix above.
+The values in the matrix above are very simple to help us to visualize the expected outcome.
+
+Before we start creating a custom function, the first step is to think about the methods (tasks) we would like the function to perform.
+To calculate the mean, we need to sum all elements in a vector and divide the result by the number of elements in that vector. For example:
+
+```{r echo = TRUE}
+my.vector <- c(2,3,2,4,7,6,7,8,4,7)
+print(my.vector)
+res.of.sum <- sum(my.vector)
+print(res.of.sum)
+len.my.vector <- length(my.vector)
+print(len.my.vector)
+res.of.mean <- res.of.sum/len.my.vector
+print(res.of.mean)
+```
+
+As we could see in the demonstration above, we used a series of task to compute the mean.
+We can pack those tasks in a very simple function that will save us time everytime we need to compute the means. The very basic syntax to create a function is:
+
+```
+a.meaningful.function.name <- function(){
+# Here we state the tasks
+} # Inside the parenthesis we include the input and parameters
+```
+Therefore, for creating a function to compute the means:
+
+```{r echo = TRUE}
+func.to.calc.means <- function(my.vector){
+  res.of.sum <- sum(my.vector) # Sum of the elements
+  len.my.vec <- length(my.vector) # Number of elements
+  res.of.mean <- res.of.sum/len.my.vec # Result
+  return(res.of.mean) # This is a very important argument that allows the function to return the output of the function
+}
+```
+
+Now, let's see how our function works. We will call each numeric vector in our *dummy.matrix* and calculate the mean.
+
+```{r echo = TRUE}for 
+# Checking out the dummy matrix again
+print(dummy.matrix, row.names = FALSE)
+# Calculating the mean of the values in the column 2 - Note: column 1 is not numeric
+res.mean.col.2 <- func.to.calc.means(dummy.matrix[,2])
+# Since the column 2 contains only 10s, the expected value should be 10
+print(res.mean.col.2)
+```
+
+##### **Time for Practice:**
+
+* Calculate the means for the third and fourth columns in the data using our fresh created means function (*func.to.calc.means*)
+
+### 5 Using for loops
+
+The *for* loops are a resource in R and many other programming languages to repeat a series of tasks.
+
+Here we will demonstrate how we can use loops to calculate the means over all columns in the *dummy.matrix* data.
+
+Let's check the *dummy.matrix* again:
+
+
+```{r echo = TRUE}
+# Checking out the dummy matrix again
+print(dummy.matrix, row.names = FALSE)
+```
+
+As we can see, the first column is the column of *sample names*, hence, we will only calculate the means from the second column and forth.
+
+The most simple syntax of a for loop is:
+
+```
+for(){
+# Here we state the tasks
+} # Within the parethesis we establish the loop
+```
+
+To calculate the column means in the *dummy.matrix* we can create the following loop:
+
+```{r echo = TRUE}
+for(i in 2:ncol(dummy.matrix)){
+  res.col.means <- func.to.calc.means(dummy.matrix[,i])
+  print(res.col.means)
+}
+```
+
+The expected results clearly are exactly 10, 20 and 30.
+
+To calculate the column means in the random *my.matrix*:
+
+```{r echo = TRUE}
+for(i in 2:ncol(my.matrix)){
+  res.col.means <- func.to.calc.means(my.matrix[,i])
+  print(res.col.means)
+}
+```
+Here the results should be roughly 5, 15 and 25, but will vary according to the random numbers selected by R in each case. Note that the script is written in such a way that it will not matter how many columns the matrix has.
+
+##### **Time for Practice:**
+
+* Check if the *irisdata* is still loaded in the R environment
+* Identify the columns that contain numeric data
+* Create a function to calculate the standard deviation in a vector of numeric values
+* Use a for loop to retrieve the standard deviation in the columns containing numeric data in the *irisdata*
+
+**Quick Tips:**
+
+* Use the following formula to calculate the standard deviation:
+<center>
+### $\sigma$ = $\sqrt($$\frac{\sum(x_i - \mu)^2}{n})$
+</center>
+
+* To calculate the square root of a number, use the function sqrt(). For example: **sqrt(4)** should return **2**.
+* Try to use only the commands that we learnt in our class
