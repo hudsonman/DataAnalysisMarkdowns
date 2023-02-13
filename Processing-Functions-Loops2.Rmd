@@ -14,9 +14,27 @@ Then, we will explore and create custom functions while analyzing the iris data 
 
 # Workflow
 
-### 1 - Importing data stored on the operating system into R
+### 1 - Saving and importing data stored in the operating system into R
 
-Firstly, we will import a version of the data set *iris* stored in our operating system (*irisdata.txt*).
+Firstly, we will export, then import a version of the data set *iris* stored in our operating system (*irisdata.txt*). This data is included with R, and can be accessed very simply with 
+
+```
+data(iris)
+head(iris)
+```
+
+We can now export this data from R and into a file on our hard drive, like so:
+
+```
+write.table(iris, file = "irisdata.txt", sep = "\t")
+```
+
+Note that I did not tell R where to put the data. If I do not give R a destination directory, it will put it in the current working directory. We can find this out with:
+
+```
+getwd()
+```
+
 There are several ways to import the data into R.
 We will focus on the command `read.table()`, a versatile way to import tables stored in text files, table-delimited files, or comma-separated files into R.
 
@@ -29,7 +47,7 @@ Before we proceed, open the file *irisdata.txt* using your preferred plain text 
 ```
 irisdata <- read.table(file = "irisdata.txt", header = TRUE, sep = "\t")
 ```
-Can you guess the parameters within the `read.table()` function mean?
+Can you guess the parameters within the `read.table()` function mean? Again, note that if I do not tell R where to look, it will look for the file in the current working directory, where we just put it.
 
 ##### **Time for Practice:**
 
