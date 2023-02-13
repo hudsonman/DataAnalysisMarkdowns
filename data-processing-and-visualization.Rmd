@@ -1,0 +1,164 @@
+---
+title: "Data Processing and Visualization"
+output: html_document
+---
+### The plot (R-base/graphics) function
+
+In industry, government or academia, graphs are helpful ways to represent data.
+The R base package has plenty of resources to produce publishable graphs but making good-looking graphics usually involves demanding processing steps, especially when processing multiple data parameters.
+
+Let's consider the following example:
+
+The R built-in data "WorldPhones" reports the number of telephones in various regions of the world.
+One way to visualize this data is by using graphs of lines, which each line represents a region of the world, the x-axis reports the years, and the y-axis reports the number of telephones.
+
+
+```{r echo = TRUE}
+
+data("WorldPhones")
+
+print(x = WorldPhones)
+
+```
+
+If we just plot the data using the command **plot( )** without specifying all the required parameters, the outcome might be meaningless and few information can be extracted from the graph.
+
+```{r echo = TRUE}
+
+plot(WorldPhones, type = "l")
+
+```
+
+
+To produce the desired graph using the R-base, a more elaborated script should be used:
+
+```{r echo = TRUE}
+
+par(mar = c(5,4,4,9), xpd = TRUE)
+
+plot(WorldPhones[,1],
+     type = "l",
+     xaxt = "n",
+     lwd = 2,
+     col = "#FF0000", # colour names can be used instead of their Hexadecimal RGB Code (i.e., red)
+     xlab = "Years",
+     ylab = "Number of telephone lines",
+     ylim = c(0, max(WorldPhones) + (max(WorldPhones)*0.1)))
+
+lines(WorldPhones[,2], lwd = 2, col = "#FFDB00")
+lines(WorldPhones[,3], lwd = 2, col = "#49FF00")
+lines(WorldPhones[,4], lwd = 2, col = "#00FF92")
+lines(WorldPhones[,5], lwd = 2, col = "#0092FF")
+lines(WorldPhones[,6], lwd = 2, col = "#4900FF")
+lines(WorldPhones[,7], lwd = 2, col = "#FF00DB")
+
+axis(side = 1, at = seq(from = 1, to = nrow(x = WorldPhones)), labels = rownames(WorldPhones))
+
+legend("topright", inset = c(-0.3, 0), legend = colnames(WorldPhones), fill = c("#FF0000", "#49FF00", "#49FF00", "#00FF92", "#0092FF", "#4900FF", "#FF00DB"))
+
+
+
+```
+
+The script above can become too extensive, depending on the number of columns (i.e., years) in the data.
+
+So, we can automate the process by creating a for-loop that reads every column of the data.
+The for-loop is presented below:
+
+```{r echo = TRUE}
+
+par(mar = c(5,4,4,9), xpd = TRUE)
+
+colvec <- rainbow(n = 7)
+names(x = colvec) <- colnames(WorldPhones)
+
+plot(NA,
+     xlim = c(1, nrow(WorldPhones)),
+     ylim = c(0,max(WorldPhones)+max(WorldPhones)*0.1),
+     xlab = "Years",
+     ylab = "Number of telephone lines",
+     xaxt = "n")
+
+
+for(i in seq(from = 1, to = ncol(x = WorldPhones))){
+  lines(x = seq(from = 1, to = nrow(x = WorldPhones)), y = WorldPhones[,i], col = colvec[i], lwd = 2)
+}
+
+axis(side = 1, at = seq(from = 1, to = nrow(x = WorldPhones)), labels = rownames(WorldPhones))
+
+legend("topright", inset = c(-0.3, 0), legend = colnames(WorldPhones), fill = colvec)
+
+```
+
+The caveat of using the method above is the complexity of the script, and this script can become even more complex if we add more aesthetic resources.
+
+### The ggplot2 package
+
+The package ggplot2 is a more efficient and professional way to produce graphs in R. The package **ggplot2**, which is part of the repository **tidyverse**, creates a series of layers in which the data is aesthetically mapped to the plot.
+However, the data should be organized in a special way to be used in ggplot2 to produce a graph of lines. The format used for ggplot2 is presented in the file **world-phones-newdata.txt**.
+The file **world-phones-newdata.tct** contains the same information as the original "WorldPhones" data. However, it was processed to be used in ggplot2.
+
+To load the file **world-phones-newdata.txt**:
+
+```{r echo = TRUE}
+
+worldphones.newdata <- read.table(file = "world-phones-newdata.txt", header = TRUE)
+
+```
+
+To load (or install and load) ggplot2:
+
+```{r echo = TRUE}
+
+# ggplot2 is not part of R-base. Therefore, we may need to install it on our system before using it.
+
+if(!require(ggplot2, quietly = TRUE)){ # check if we have ggplot2 installed, without printing any warning (i.e., quietly). If we do not have ggplot2 installed, try to install it.
+  
+  install.packages("ggplot2")
+  
+}
+
+library(ggplot2)
+
+```
+
+To produce a graph of lines:
+
+```{r echo = TRUE}
+
+ggplot() +
+  geom_line(mapping = aes(x = as.character(years),
+                          y = num.phones,
+                          group = regions,
+                          col = regions),
+            size = 0.75,
+            data = worldphones.newdata) +
+  xlab("Years") +
+  ylab("Number of telephone lines") +
+  ggtitle(label = "Telephone Lines vs. Years")
+
+```
+
+Changing the theme:
+
+```{r echo = TRUE}
+
+ggplot() +
+  theme_bw() + 
+  geom_line(mapping = aes(x = as.character(years),
+                          y = num.phones,
+                          group = regions,
+                          col = regions),
+            size = 0.75,
+            data = worldphones.newdata) +
+  xlab("Years") +
+  ylab("Number of telephone lines") +
+  ggtitle(label = "Telephone Lines vs. Years")
+
+```
+
+In summary, ggplot2 handles all the graphical parameters required for producing aesthetically pleasant and publishable graphics. The variety of customization is countless and it enables researchers to produce graphics that better represents their data.
+
+It is important to consider the role of data processing before using these packages, though. As we noticed during this workflow, we had to convert the original data in an special way before using ggplot2.
+
+**For the practice today, create a function that converts the original WorldPhones data in a data ready for ggplot2.**
