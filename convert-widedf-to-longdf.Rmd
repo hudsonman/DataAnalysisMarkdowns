@@ -1,7 +1,7 @@
 ---
 title: "Converting wide data frames in long/tall data frames"
 output: html_document
-date: March 11, 2022
+Created date: March 11, 2022
 ---
 
 # Some solutions for converting wide data frame in a long/tall data frame (key-value pair) using r-base only.
@@ -228,6 +228,94 @@ for (i in (seq (1:ncol(WorldPhones)))) {
 head(new_WorldPhones)
 
 ```
+## Solution 8. By Claude.ai, April 2025
+#### This really shows the progress in LLM coding since these examples were made manually - at that time no AI could solve this problem. Now, this is likely the best and most general solution.
+
+library(ggplot2)
+library(reshape2)
+
+# Function to plot any 2D matrix with column titles as a multicolored line graph
+plot_matrix_as_lines <- function(matrix_data, title = "Matrix Visualization", 
+                                 x_label = "Index", y_label = "Value") {
+  
+  # Check if input is a matrix or data frame
+  if(!is.matrix(matrix_data) && !is.data.frame(matrix_data)) {
+    stop("Input must be a matrix or data frame")
+  }
+  
+  # If matrix, convert to data frame to ensure proper handling
+  if(is.matrix(matrix_data)) {
+    matrix_data <- as.data.frame(matrix_data)
+  }
+  
+  # Add row index as a column if not already present
+  if(is.null(rownames(matrix_data))) {
+    row_indices <- 1:nrow(matrix_data)
+  } else {
+    row_indices <- rownames(matrix_data)
+    # Convert to numeric if possible
+    if(all(grepl("^\\d+$", row_indices))) {
+      row_indices <- as.numeric(row_indices)
+    }
+  }
+  
+  # Add the index column
+  matrix_data$Index <- row_indices
+  
+  # Reshape data from wide to long format for ggplot
+  melted_data <- melt(matrix_data, id.vars = "Index", 
+                      variable.name = "Series", value.name = "Value")
+  
+  # Create the plot
+  p <- ggplot(melted_data, aes(x = Index, y = Value, color = Series, group = Series)) +
+    geom_line(size = 1) + 
+    geom_point(size = 2) +
+    labs(title = title,
+         x = x_label, 
+         y = y_label) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+      axis.title = element_text(size = 12),
+      axis.text = element_text(size = 10),
+      legend.title = element_text(size = 12),
+      legend.text = element_text(size = 10),
+      legend.position = "right"
+    )
+  
+  return(p)
+}
+
+# Example usage with built-in datasets
+
+# Example 1: World phones dataset
+data(WorldPhones)
+# WorldPhones is already a matrix with column titles
+phones_plot <- plot_matrix_as_lines(WorldPhones, 
+                                    title = "Number of Telephones by Region (1951-1961)",
+                                    x_label = "Year", 
+                                    y_label = "Number of Telephones")
+print(phones_plot)
+
+# Example 2: Iris dataset (using selected columns)
+data(iris)
+# Select only numeric columns from iris
+iris_numeric <- iris[, 1:4]
+iris_plot <- plot_matrix_as_lines(iris_numeric, 
+                                  title = "Iris Dataset Measurements",
+                                  x_label = "Sample Index", 
+                                  y_label = "Measurement (cm)")
+print(iris_plot)
+
+# Example 3: Custom matrix
+set.seed(123)
+custom_matrix <- matrix(rnorm(50), nrow = 10, 
+                        dimnames = list(2011:2020, c("A", "B", "C", "D", "E")))
+custom_plot <- plot_matrix_as_lines(custom_matrix,
+                                    title = "Random Data Trends (2011-2020)",
+                                    x_label = "Year", 
+                                    y_label = "Value")
+print(custom_plot)
 
 
 
